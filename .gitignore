@@ -1,0 +1,6 @@
+*.sh
+kubeconfig
+k3sup*
+*.txt
+htpasswd
+*.yaml
