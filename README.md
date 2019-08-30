@@ -1,6 +1,6 @@
 ## Setup a private Docker registry with TLS on Kubernetes
 
-This tutorial will show you how to deploy your own registry on Kubernetes for storing Docker images. You will also learn how to setup TLS certificates which will be issued for free from LetsEncrypt.com.
+This tutorial will show you how to deploy your own registry on Kubernetes for storing Docker images. You will also learn how to setup TLS certificates which will be issued for free from [LetsEncrypt.com](https://letsencrypt.com).
 
 ### Do I need my own registry?
 
@@ -38,7 +38,11 @@ It is relatively easy to integrate one or more registries into an existing Kuber
 
 * [Docker](https://www.docker.com/) - we'll use Docker to generate some of our configuration
 
-* [Kubernetes](https://kubernetes.io/) - we'll be hosting our registry on Civo. You can use the managed k3s service, if you have early access to the #Kube100 program, or use [k3sup (ketchup)](https://www.civo.com/learn/kubernetes-on-civo-in-5-minutes-flat) to deploy to your own instances.
+* [Kubernetes](https://kubernetes.io/) - this tutorial is written with k3s in mind, but also works on Kubernetes with a few tweaks.
+
+For Civo users we'll be hosting our registry on Civo Cloud. You can use the new managed k3s service, if you have early access to the #Kube100 program, or use [k3sup (ketchup)](https://www.civo.com/learn/kubernetes-on-civo-in-5-minutes-flat) to deploy to your own instances.
+
+* [helm](https://helm.sh) - a packaging tool used to install cert-manager and docker-registry
 
 * [cert-manager](https://github.com/jetstack/cert-manager) - provides TLS certificates
 
@@ -48,13 +52,11 @@ It is relatively easy to integrate one or more registries into an existing Kuber
 
 * [nginx-ingress](https://kubernetes.github.io/ingress-nginx/) - The Nginx IngressController configures instances of [Nginx](https://nginx.com) to handle incoming HTTP/s traffic.
 
-* [helm] - used to install cert-manager and docker-registry
-
 ### Tutorial
 
-We'll first install helm, then tiller, then add [Nginx](https://nginx.com/) in host mode. After that we'll add cert-manager and an Issuer, followed by the registry and its TLS certificate. After everything is installed, we can then make use of our registry using the password created during the tutorial.
+We'll first install helm, then tiller, then Kubernetes users can add [Nginx](https://nginx.com/) in HostMode and k3s users can skip this because they will be using [Traefik](https://traefik.io). After that we'll add cert-manager and an Issuer to obtain certificates, followed by the registry. After everything is installed, we can then make use of our registry using the password created during the tutorial. You'll finish off by testing everything end-to-end, and if you get stuck, there are some helpful tips on how to troubleshoot.
 
-Some components are installed in their own namespaces such as cert-manager, all others will be installed into the `default` namespace. You can control the namespace with `kubectl get --namespace/-n NAME` or `kubectl get --all-namespaces/-A`
+Some components are installed in their own namespaces such as cert-manager, all others will be installed into the `default` namespace. You can control the namespace with `kubectl get --namespace/-n NAME` or `kubectl get --all-namespaces/-A`.
 
 There will also be some ways to take the tutorial further in the appendix.
 
@@ -115,7 +117,7 @@ helm install stable/nginx-ingress --name nginxingress --set rbac.create=true,con
 
 #### Install cert-manager
 
-You can now install cert-manager, the version used is v0.9.0.
+You can now install cert-manager, the version used is v0.9.1.
 
 ```sh
 # Install the CustomResourceDefinition resources separately
@@ -146,7 +148,7 @@ See also: [cert-manager v0.9.0 docs](https://docs.cert-manager.io/en/release-0.9
 
 #### Create a ClusterIssuer
 
-The way that cert-manager issues certificates is through an [Issuer](https://docs.cert-manager.io/en/release-0.9/tutorials/acme/http-validation.html).
+The way that cert-manager issues certificates is through an [Issuer](https://docs.cert-manager.io/en/release-0.9/tutorials/acme/http-validation.html). The `Issuer` can issue certificates for the namespace it is created in, but a `ClusterIssuer` can create certificates for any namespace, so that's the one we will use today.
 
 Save `issuer.yaml`:
 
@@ -176,7 +178,14 @@ spec:
 
 Edit the line: `email: user@example.com`.
 
-If using Nginx instead of k3s and Traefik, then set `class: nginx`
+If using Nginx instead of k3s and Traefik, then edit the following:
+
+```
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
+```
 
 Then run `kubectl apply -f issuer.yaml`.
 
@@ -372,7 +381,7 @@ imagePullSecrets:
 - name: my-private-repo
 ```
 
-To check that it's available in Kubernetes, you can run the following:
+To check that it's available in Kubernetes, you can run the following [OpenFaaS function](https://github.com/openfaas/faas/), which prints an ASCII logo and then exits.
 
 ```sh
 export SERVER=""
