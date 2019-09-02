@@ -1,16 +1,18 @@
 ## Setup a private Docker registry with TLS on Kubernetes
 
-This tutorial will show you how to deploy your own registry on Kubernetes for storing Docker images. You will also learn how to setup TLS certificates which will be issued for free from [LetsEncrypt.com](https://letsencrypt.com).
+This tutorial will show you how to deploy your own registry on Kubernetes for storing Docker images. You will also learn how to setup [TLS certificates](https://en.wikipedia.org/wiki/Transport_Layer_Security) which will be issued for free from [LetsEncrypt.com](https://letsencrypt.com).
 
 ### Conceptual architecture
 
 ![Registry](/images/registry.png)
 
-Learn how each part works together by following the tutorial.
+You will learn how each part works together by following the tutorial.
 
-### Do I need my own registry?
+### Do I need my own container registry?
 
-At present there are managed Docker registries offered by almost every cloud provider. Even companies who do not offer compute are starting to offer registries such as [jFrog](https://jfrog.com), [GitLab.com](https://docs.gitlab.com/ee/user/project/container_registry.html), and [GitHub.com](https://github.com/features/package-registry).
+The primary purpose of a container registry is to store and host artifacts packaged in the [Docker or OCI-image format](https://blog.docker.com/2017/07/demystifying-open-container-initiative-oci-specifications/).
+
+At present there are managed registries for container images offered by almost every cloud provider. Even companies who do not offer compute are starting to offer registries such as [jFrog](https://jfrog.com), [GitLab.com](https://docs.gitlab.com/ee/user/project/container_registry.html), [Docker Inc](https://hub.docker.com), and [GitHub.com](https://github.com/features/package-registry).
 
 So why would you want to set up your own?
 
@@ -40,27 +42,28 @@ It is relatively easy to integrate one or more registries into an existing Kuber
 
 ### Pre-reqs
 
-* A domain name, or sub-domain which you own and can update the DNS records for.
+* A domain name, or sub-domain which you own. You need to be able to update DNS A records for your domain. I bought mine at [domains.google](https://domains.google).
 
-* [Docker](https://www.docker.com/) - we'll use Docker to generate some of our configuration
+* [Docker](https://www.docker.com/) - we'll use a Docker container to generate some of our configuration
 
 * [Kubernetes](https://kubernetes.io/) - this tutorial is written with k3s in mind, but also works on Kubernetes with a few tweaks.
 
-For Civo users we'll be hosting our registry on Civo Cloud. You can use the new managed k3s service, if you have early access to the #Kube100 program, or use [k3sup (ketchup)](https://www.civo.com/learn/kubernetes-on-civo-in-5-minutes-flat) to deploy to your own instances.
+  If you're a Civo user, then we'll be hosting our registry on [Civo Cloud](https://civo.com). You can use [k3sup (ketchup)](https://www.civo.com/learn/kubernetes-on-civo-in-5-minutes-flat) to deploy Kubernetes on your own Instances within a few minutes. If you have access to the #Kube100 program, then you can use the managed k3s service.  
 
 * [helm](https://helm.sh) - a packaging tool used to install cert-manager and docker-registry
+  Some developers have concerns about using helm's server-side component called `tiller`. Rest assured, you can use the `helm template` command to avoid installing `tiller` if it bothers you.
 
-* [cert-manager](https://github.com/jetstack/cert-manager) - provides TLS certificates
+* [cert-manager](https://github.com/jetstack/cert-manager) - a tool by [JetStack](https://jetstack.io/) which provides and renews TLS certificates from [LetsEncrypt](https://letsencrypt.org).
 
-* [docker-registry](https://hub.docker.com/_/registry) - Docker's own free, open source registry
-
-> Note: If you are using k3s, you can skip installing Nginx IngressController,
+* [docker-registry](https://hub.docker.com/_/registry) - This is a helm chart for Docker's own open source registry
 
 * [nginx-ingress](https://kubernetes.github.io/ingress-nginx/) - The Nginx IngressController configures instances of [Nginx](https://nginx.com) to handle incoming HTTP/s traffic.
 
+> Note: If you are using k3s, you can skip installing Nginx IngressController
+
 ### Tutorial
 
-We'll first install helm, then tiller, then Kubernetes users can add [Nginx](https://nginx.com/) in HostMode and k3s users can skip this because they will be using [Traefik](https://traefik.io). After that we'll add cert-manager and an Issuer to obtain certificates, followed by the registry. After everything is installed, we can then make use of our registry using the password created during the tutorial. You'll finish off by testing everything end-to-end, and if you get stuck, there are some helpful tips on how to troubleshoot.
+We'll first install helm, then tiller, then Kubernetes users can add [Nginx](https://nginx.com/) in *Host* mode and k3s users can skip this because they will be using [Traefik](https://traefik.io). After that we'll add cert-manager and an Issuer to obtain certificates, followed by the registry. After everything is installed, we can then make use of our registry using the password created during the tutorial. You'll finish off by testing everything end-to-end, and if you get stuck, there are some helpful tips on how to troubleshoot.
 
 Some components are installed in their own namespaces such as cert-manager, all others will be installed into the `default` namespace. You can control the namespace with `kubectl get --namespace/-n NAME` or `kubectl get --all-namespaces/-A`.
 
