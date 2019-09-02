@@ -60,6 +60,12 @@ Some components are installed in their own namespaces such as cert-manager, all 
 
 There will also be some ways to take the tutorial further in the appendix.
 
+#### Conceptual architecture
+
+![Registry](/images/registry.png)
+
+Learn how each part works together by following the tutorial.
+
 #### Install the helm CLI/client
 
 Instructions for latest Helm install
