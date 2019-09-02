@@ -2,6 +2,12 @@
 
 This tutorial will show you how to deploy your own registry on Kubernetes for storing Docker images. You will also learn how to setup TLS certificates which will be issued for free from [LetsEncrypt.com](https://letsencrypt.com).
 
+### Conceptual architecture
+
+![Registry](/images/registry.png)
+
+Learn how each part works together by following the tutorial.
+
 ### Do I need my own registry?
 
 At present there are managed Docker registries offered by almost every cloud provider. Even companies who do not offer compute are starting to offer registries such as [jFrog](https://jfrog.com), [GitLab.com](https://docs.gitlab.com/ee/user/project/container_registry.html), and [GitHub.com](https://github.com/features/package-registry).
@@ -59,12 +65,6 @@ We'll first install helm, then tiller, then Kubernetes users can add [Nginx](htt
 Some components are installed in their own namespaces such as cert-manager, all others will be installed into the `default` namespace. You can control the namespace with `kubectl get --namespace/-n NAME` or `kubectl get --all-namespaces/-A`.
 
 There will also be some ways to take the tutorial further in the appendix.
-
-#### Conceptual architecture
-
-![Registry](/images/registry.png)
-
-Learn how each part works together by following the tutorial.
 
 #### Install the helm CLI/client
 
